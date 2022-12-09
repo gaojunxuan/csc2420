@@ -1,0 +1,111 @@
+\input{scribe.tex}
+
+\begin{document}
+%FILL IN THE RIGHT INFO.
+%\lecture{**LECTURE-NUMBER**}{**DATE**}{**LECTURER**}{**SCRIBE**}
+\lecture{3}{Online Bipartite Matching}{Calum McRury}{Kevin Gao}
+
+Recall that the ranking algorithm independently assigns a ranking for each offline vertex and match the online vertices based on the ranking of the available offline vertex as the online vertices arrive.
+
+An intuitive interpretation of the matching problem is as follows. One side $U$ are the sellers, and the other side $V$ are the buyers. Each seller draws a price $x_u$ uniformly and indepdently from $[0,1]$. We as the ``government'', set an adjusted price $g(x_u)$ that the buyers end up seeing as the final pricetag. Then, when the buyer $v \in V$ arrives, the buyer greedily choose the cheapest item that it can buy (in $N(v)$), contributing to the overall utility by $(1-g(x_u))$. In the analysis, we adjust each both the adjusted price and the utility gain by a factor of $1/F$ where $F = 1-1/e$. Setting $\alpha_u = g(x_u)/F$ and for $v \in N(u)$, $\beta_v = (1-g(_u))/F$, we wish to maximize
+\label{eq:online-matching-objective}
+\begin{equation}
+    |\mathcal{M}| = F \cdot \left[ \sum_{u \in U} \alpha_u + \sum_{v \in V} \beta_v \right].
+\end{equation}
+
+\begin{theorem}
+    Ranking returns a matching $\mathcal{M}$ of $G=(U,V,E)$ such that
+    $$
+    \mathbb{E}[|\mathcal{M}|] \geq F \cdot \mathrm{OPT}(G)
+    $$
+    where $F = 1 - 1/e \approx 0.62$.
+\end{theorem}
+
+\begin{proof}
+    Consider the convex relaxation of the integral matching LP where $X_e$ is the indicator that is equal to 1 when $e$ is included in the matching.
+    $$
+    \begin{array}{llll}
+        \text{maximize} & \sum_{e \in E} X_e \\
+        \text{subject to} & \sum_{u \in N(v)} X_{uv} \leq 1 & \forall v \in V \\
+        & \sum_{v \in N(u)} X_{uv} \leq 1 & \forall u \in U \\
+        & X_e \geq 0 & \forall e \in E
+    \end{array}
+    $$
+    The LP has $|U|+|V|$ variables and $|E|$ constraints. Take the dual of the LP. The dual is the vertex cover LP.
+    $$
+    \begin{array}{llll}
+        \text{minimize} & \sum_{u \in U} \alpha_u^* + \sum_{v \in V} \beta_v^* \\
+        \text{subject to} & \alpha_u^* + \beta_v^* \geq 1 & \forall uv \in E \\
+        & \alpha_u^*,\beta_v^* \geq 0 & \forall u \in U,\, v \in V
+    \end{array}
+    $$
+    $\alpha_u^*$ is the indicator variable that is 1 when $u$ is in the vertex cover. By weak duality of LP,
+    $$
+    \mathrm{LPOPT}(G) \leq \mathrm{DualLPOPT}(G)
+    $$
+    Further, for our relaxation,
+    $$
+    \mathrm{OPT}(G) \leq \mathrm{LPOPT}(G)
+    $$
+    Proof Idea: As the raning algorithm executes, we will construct a primal LP solution and a dual LP solution such that:
+    \begin{enumerate}
+        \item primal: is just the integral matching
+        \item dual: fix $u \in U$, $v \in V$; if the ranking algorithm matches $v$ to $u$ as the online vertex $v$ arrives, then we set $\alpha_u = g(X_u)/F$ and $\beta_u = (1-g(X_u))/F$ where $F=1-1/e$ and $g(x) = -\exp(x-1)$; otherwise, set $\alpha_u = 0$ and $\beta_v = 0$ if $u$ and $v$ are unmatched. 
+    \end{enumerate}
+    When one more edge is admitted to $\mathcal{M}$, the objective function of the dual increased by $1/F > 1$.
+
+    $(\alpha_u)_{u \in U}$ and $(\beta_v)_{v \in V}$ are random variables dependent on $(X_u)_{u \in U}$. Similarly, $\mathcal{M}$ is a random matching of $G$. The goal of the proof is to show that
+    $$
+    \mathbb{E}[|\mathcal{M}|] \geq (1-1/e) \cdot \mathrm{OPT}(G).
+    $$
+    Taking expectation of on both sides of \ref{eq:online-matching-objective}, we have
+    $$
+    \mathbb{E}[|\mathcal{M}|] = F \cdot \left[ \sum_{u \in U} \mathbb{E}[\alpha_u] + \sum_{v \in V} \mathbb{E}[\beta_v] \right]
+    $$
+    by linearity of expectation. Further, recall that $\mathrm{OPT}(G) \leq \mathrm{LPOPT}(G) \leq \mathrm{DualLPOPT}(G)$. Then for $\alpha_u^*$ and $\beta_v^*$ or any other feasible solution, 
+    $$
+    \mathrm{OPT}(G) \leq \mathrm{LPOPT}(G) \leq \mathrm{DualLPOPT}(G) \leq \sum_{u \in U} \alpha_u^* + \sum_{v \in V}\beta_v^*
+    $$
+    because the dual is a minimizing LP. Hence, it suffices to prove that for $\alpha_u^* = \mathbb{E}[\alpha_u]$ and $\beta_v^* = \mathbb{E}[\beta_v]$, $(\alpha_u^*)_{u \in U}$ and $(\beta_v^*)_{v \in V}$ are feasible solution for the dual LP. We now proceed with the proof.
+
+    Fix an arbitrary edge $e_0 = (u_0,v_0) \in E$. We want to show that $\alpha_{u_0}^*$ and $\beta_{v_0}^*$ are feasible, which we can argue by showing $\alpha_{u_0}^* + \beta_{v_0}^* \geq 1$. Let $\tilde{G} = G \setminus \{u_0\}$. Fix $x_u$ for $u \neq u_0$. Consdier an execution of the ranking algorithm on $\tilde{G}$. Define $X^c$ to be the ``critical rank'' such that
+    $$
+    x^c = \begin{cases}
+        X_u & \text{if $v_0$ matched to some $u \in U \setminus \{u_0\}$ } \\
+        1 & \text{otherwise}
+    \end{cases}
+    $$
+
+    \begin{lemma}[Dominance Lemma]
+        If all ranks $(X_u)_{u \neq u_0}$ are fixed, then $u_0$ will be matched when the ranking algorithm executes on $G$, provided $X_{u_0} < X^c$.
+    \end{lemma}
+
+    \begin{lemma}[Monotonicity Lemma]
+        Set $\beta_{v_0}^c = (1-g(x^c)) / F$. Think of this as the ``worst possible utility $v_0$ can gain''. If all r.v. $(X_u)_{u \neq u_0}$ are fixed, then when the ranking algorithm executes on $G$, we get that
+        $$
+        \beta_{v_0} \geq \beta_{v_0}^c.
+        $$
+    \end{lemma}
+
+    Now, we prove the main claim. Consider $\beta_{v_0}$ first. By the Monotonicity Lemma, $\beta_{v_0} \geq \beta_{v_0}^c = (1-g(x^c)) / F$. Now consider $\alpha_{u_0}$ conditioned on $(X_u)_{u \neq u_0}$. Recall that $X_{u_0}$ is uniformly chosen from $[0,1]$ so $\mathcal{U}[0,1]$.
+    $$
+    \mathbb{E}\left[ \alpha_{u_0} \mid (X_u)_{u \neq u_0} \right] \geq \int_{0}^{x^c} g(s) ds \cdot \frac{1}{F}
+    $$
+    With this, we have the following bound
+    $$
+    \mathbb{E}\left[ \alpha_{u_0} \mid (X_u)_{u \neq u_0} \right] + \mathbb{E}\left[ \beta_{v_0} \mid (X_u)_{u \neq u_0} \right] \geq \int_{0}^{x^c} g(s) ds \cdot \frac{1}{F} + \frac{1-g(x^c)}{F}
+    $$
+    For any real $\theta \in [0,1]$,
+    $$
+    \int_0^\theta g(s) ds + (1-g(\theta)) \geq F = 1-\frac{1}{e}
+    $$
+    which gives a lower bound on $\mathbb{E}\left[ \alpha_{u_0} \mid (X_u)_{u \neq u_0} \right] + \mathbb{E}\left[ \beta_{v_0} \mid (X_u)_{u \neq u_0} \right]$ that is
+    $$
+    \mathbb{E}\left[ \alpha_{u_0} \mid (X_u)_{u \neq u_0} \right] + \mathbb{E}\left[ \beta_{v_0} \mid (X_u)_{u \neq u_0} \right] \geq \int_{0}^{x^c} g(s) ds \cdot \frac{1}{F} + \frac{1-g(x^c)}{F} \geq 1.
+    $$
+    Taking expectation on both sides again,
+    $$
+    \alpha_{u_0}^* + \beta_{v_0}^* = \mathbb{E}\big[\mathbb{E}\left[ \alpha_{u_0} \mid (X_u)_{u \neq u_0} \right] + \mathbb{E}\left[ \beta_{v_0} \mid (X_u)_{u \neq u_0} \right]\big] \geq 1.
+    $$
+\end{proof}
+\end{document}

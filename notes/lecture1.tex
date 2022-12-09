@@ -1,0 +1,61 @@
+\input{scribe.tex}
+
+\begin{document}
+%FILL IN THE RIGHT INFO.
+%\lecture{**LECTURE-NUMBER**}{**DATE**}{**LECTURER**}{**SCRIBE**}
+\lecture{1}{Approximation Algorithms Review}{Allan Borodin}{Kevin Gao}
+
+The conceptually simplest ``combinatorial'' algorithms:
+\begin{multicols}{3}
+    \begin{itemize}
+        \item brute force search
+        \item divide and conquer
+        \item greedy algorithms
+        \item local search
+        \item dynamic programming
+    \end{itemize}
+\end{multicols}
+
+Consider the \textbf{knapsack} problem. We are given a set of $n$ items $I_1,...,I_n$ and a size bound $B$ where each item $I_j = (w_j , v_j)$ with $w_j$ being the weight (cost) of the item and $v_j$ the value of the item.
+
+A subset of items $S$ is feasible if the sum of the weights of items in $S$ is at most $B$. The goal of the knapsack problem is to find a feasible set $S$ that maximizes the sum of the values of items in $S$.
+
+A ``natural'' algorithm for knapsack is to sort the items by their ratios of value over cost $v_i/w_i$. However, this only works for \textbf{fractional} values. 0/1 kanpsack is \textbf{NP-complete}.
+
+\section{Greedy and Online Algorithms}
+
+We start with two greedy algorithms: Graham's online and LPT makespan algorithms.
+
+\subsection{Makespan}
+
+In the \textbf{makespan} problem, we have $m$ machines and $n$ jobs $\{J_1,\ldots,J_n\}$. Each job $J_i$ has a load $P_i$. The goal of the problem is to assign every job to a machine. We want to minimize the maximum load on any machine. More formally, we want to find a mapping $\sigma:\; \{J_1,\ldots,J_n\} \to \{1,\ldots,m\}$ from the set of jobs to the set of machines that \textbf{minimizes} the objective function
+$$
+\max_j \left\{ \sum_{i:\sigma(i)=j} P_i \right\}
+$$
+The natural online greedy algorithm for makespan achieves an approximation ratio of $2-\frac{1}{m}$.
+
+The analysis of asymptotic approximation ratio is commonly known as competitive analysis (a term coined by
+Manasse, McGeoch and Sleator). In \textbf{competitive analysis}, we compare the performance of an online algorithm against that of an optimal solution. An \textbf{online algorithm} is one where input items arrive sequentially and the algorithm must make an irrevocable decision concerning each item. For makespan, an item is a job and the decision is to choose a machine on which the item is scheduled. The competitive ratio is the standard measure of performance of online algorithms, although there are alternative measures.
+
+An adversarial input for the greedy makespan algorithm would be $m(m-1)$ job of load $1$ and one job of load $m$. This results in a makespan of $m-1+m = 2m+1$. The optimal solution has make span $m$ (reserve one machine for the job with load $m$).
+
+A better (not online) approximation algorithm is to sort the jobs by their load. We call this LPT (longest processing time)-first. This gives an approximation ratio of $\frac{4}{3} - \frac{1}{3m}$.
+
+\subsection{Variants of Online Algorithms}
+
+In hte standard meaning of online algorithms, we think of an adversary as creating an adversial input set and the ordering of the input items in that set. We also call this online \textbf{adversarial input model}.
+
+We will also consider an \textbf{online stochastic model}. In this model, an adversary defines an input distribution and then input items are sequentially generated. This is often seen in operational research.
+
+In the \textbf{random order model} (ROM), an adversary creates a size $n$ adverserial input set and then the items from that set are given in a uniform random order (uniform over the $n!$ permutations).
+
+There may be extensions to this paradigm, for example:
+\begin{itemize}
+    \item Lookahead with buffer
+    \item Limited ability to revoke previous decisions
+    \item Multiple solutions and take the best of the final solutions
+    \item Parallelism or multiple passes over the input items
+    \item Advice bits based on the entire input
+\end{itemize}
+
+\end{document}

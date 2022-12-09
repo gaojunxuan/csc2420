@@ -1,0 +1,135 @@
+\input{scribe.tex}
+
+\begin{document}
+%FILL IN THE RIGHT INFO.
+%\lecture{**LECTURE-NUMBER**}{**DATE**}{**LECTURER**}{**SCRIBE**}
+\lecture{6}{Online Bipartite Matching and Secretary Problem}{Calum MacRury}{Kevin Gao}
+
+\section{Online Bipartite Matching in ROM}
+
+In the random order model (ROM), the nodes $V$ of $G$ are presented to $\mathcal{A}$ uniformly at random, so the matching $\mathcal{A}(G)$ returned by $\mathcal{A}$ is random.
+
+Performance of $\mathcal{A}$, namely $\Exp[w(\mathcal{A}(G))]$, is averaged over $\pi$. The competitive ratio of $\mathcal{A}$ in the random order model is then
+$$
+\inf_{G} \frac{\Exp[w(\mathcal{A}(G))]}{OPT(G)}
+$$
+
+Huang et al. 2018 introduced a generalization of Weighted-Ranking, defined using a function $g(x,y)$ where $g:\; [0,1]^2 \to [0,1]$.
+
+The price of $u \in U$ is then $w_u \cdot g(X_u,Y_V)$ where $X_U \sim \mathcal{U}[0,1]$ is the rank of $u \in U$ and $Y_V \sim \mathcal{U}[0,1]$ is the arrival time of vertex $v \in V$.
+
+For fixed $x \in [0,1]$, if $y_1 < y_2$, then $g(x,y_2) < g(x,y_1)$. Thus, the later a vertex $v$ arrives, the larger $Y_V$ is, the lower the prices for $v$.
+
+\begin{theorem}
+    Generalized-Ranking achieves a competitive ratio of $0.6534$ in the vertex-weighted ROM setting.
+\end{theorem}
+
+\section{Online Matching with Edge Weight}
+
+We have so far only considered the case when $G = (U,V,E)$ is vertex weighted. All the arrival models and corresponding competitive ratios generalize to the edge weighted setting.
+
+However, in the adversarial arrival model, no algorithm attains a constant competitive ratio. This is true even when $|U|=1$ and $|V|=2$. Consider the case when $w_{e_1} << w_{e_2}$.
+
+\subsection{The Secretary Problem}
+
+When $|U| = 1$, $E = \{u\} \times V$, observe that $OPT(G) = \max_{e \in E} w_e$. This is the secretary problem. Moreover, the algorithm can select at most one edge, and the edges arrive uniformly at random. The secretary algorithm is simple:
+
+\begin{codebox}
+    \Procname{$\proc{Secretary}$}
+    \li pass on the first $n / e$ arriving edges
+    \li accept the first edge whose weight is at least as large as the first $n / e$ edges
+\end{codebox}
+
+If the max edge is in the first $n / e$ edges, we don't pick anything. The probability of this happening is $1 / e$.
+
+\begin{problem}
+    \hfill
+    
+    \normalfont \textbf{Input}: Let there be $n$ applicants, say $1,\ldots,n$, where $w_i$ is the ``value/weight'' of applicant $i$.
+
+    \textbf{Goal}: Output $I \in \{1,\ldots,n\}$ such that
+    $$
+    \Exp[w_I] \geq \alpha \cdot \max_{1 \leq i \leq n} w_i
+    $$
+\end{problem}
+
+In the following pseudocode, $\pi$ is a random permutation of the applicants.
+
+\begin{codebox}
+    \Procname{$\proc{Threshold-Secretary}$}
+    \li \For $t = 1$ \To $c\cdot n - 1$ \Do
+        \li pass on applicant $\pi(t)$
+    \End
+    \li \For $t = c \cdot n$ \To $n$ \Do
+        \li \If $w_{\pi(t)} \geq \max \{w_{\pi(1),\ldots,w_{\pi(cn-1)}}\}$ \Then
+            \li \Return $w_{\pi(t)}$
+\end{codebox}
+
+\begin{theorem}
+    If $j = \arg\max_{1 \leq i \leq n} w_i$,
+    $$
+    \Pr[I = i] \geq \alpha
+    $$
+    where $\alpha = 1/e$.
+\end{theorem}
+\begin{proof}
+    Let $I$ be the output of the $cn$ threshold. We would like to find a lower bound on $\Pr[w_I = \max\{w_1,\ldots,w_n\}]$. This probability can be expressed as
+    \begin{equation}
+        \Pr[w_I = \max\{w_1,\ldots,w_n\}] = \sum_{t=1}^{n} \Pr[I = \pi(t) \land w_{\pi(t)} = \max\{w_1,\ldots,w_n\}]
+    \end{equation}
+    Observation: $\pi(t)$ is selected if and only if $\pi(t)$ is the best amongst the first $cn$ candidates and all candidates from $\pi(cn)$ to $\pi(t-1)$ are rejected. Equivalently, this is equal to the probability that $\pi(t)$ is the best applicant AND $\pi(cn),\ldots,\pi(t-1)$ are rejected.
+    $$
+    \begin{aligned}
+        \Pr[I = \pi(t) \land \text{$\pi(t)$ is the best}] &= \Pr[\text{$\pi(cn),\ldots,\pi(t-1)$ rejected} \mid \text{$\pi(t)$ is the best}] \cdot \Pr[\text{$\pi(t)$ is the best}] \\
+        &= \Pr[\text{$\pi(cn),\ldots,\pi(t-1)$ rejected} \mid \text{$\pi(t)$ is the best}] \cdot \frac{1}{n}
+    \end{aligned}
+    $$
+    For every job $\pi(j)$ between $\pi(cn)$ and $\pi(t-1)$, it is rejected if and only if $w_{\pi(j)} < \max\{w_{\pi(1) \ldots w_{\pi(cn-1)}}\}$. This transforms the event of ``all jobs rejected'' into ``all jobs have value smaller than the max of the first $cn-1$ jobs'', which is something that we can calculate.
+    $$
+    \begin{aligned}
+        \Pr\left[ \bigcap_{j=cn}^{t-1} \left( w_{\pi(j)} < \max\left\{w_{\pi(1),\ldots,w_{\pi(cn-1)}}\right\} \right) \right] &= \Pr\Bigg[ \parbox{14em}{ best applicant amongst the first $t-1$ arrivals in the first $cn-1$} \Bigg] \\
+        &= \frac{cn-1}{t-1}
+    \end{aligned}
+    $$
+    Substitute this result back to (5.1).
+    \begin{equation}
+        \Pr[w_I = \max\{w_1,\ldots,w_n\}] = \sum_{t=cn}^{n} \frac{cn-1}{t-1} \cdot \frac{1}{n}
+    \end{equation}
+    As $n \to \infty$, (5.2) can be upper bounded as follows.
+    $$
+    \begin{aligned}
+        \sum_{t=cn}^{n} \frac{cn-1}{t-1} \cdot \frac{1}{n} &= (1+o(1)) c \cdot \sum_{t=cn}^{n} \frac{1}{t-1} \\
+        &\leq (1 + o(1))c \int_{s=cn}^n \frac{1}{s} ds \\
+        &= (1+o(1))c \cdot \left[ \ln(n) - \ln(cn) \right] \\
+        &= c \ln c
+    \end{aligned}
+    $$
+    This attains maximum for $c = \frac{1}{e}$.
+\end{proof}
+
+It turns out this ratio can be achieved in the general case where we have more than one offline vertices as well. The algorithm is as follows.
+
+\begin{codebox}
+    \Procname{$\proc{Secretary-Matching}$}
+    \li $\mathcal{M} = \emptyset$
+    \li $G_0 = (U,\emptyset,\emptyset)$
+    \li \For $t = 1,\ldots,n$ \Do
+        \li input $v_t$ and compute $G_t$ by updating $G_{t-1}$ to contain $v_t$
+        \li \If $t < \lfloor n/e \rfloor$ \Then
+            \li pass on $v_t$
+        \li \Else
+            \li compute an optimal matching $\mathcal{M}_t$ of $G_t$
+            \li $e_t = $ the edge matched to $v_t$ via $\mathcal{M}_t$
+            \li \If $e_t = (u_t, v_t)$ exists and $u_t$ is unmatched \Then
+                \li $\mathcal{M} = \mathcal{M} \cup \{e_t\}$
+            \End
+        \End
+    \End
+    \li \Return $\mathcal{M}$  
+\end{codebox}
+
+\begin{theorem}[Kesselheim 2013, ESA]
+    Secretary-Matching attains an asymptotic as $|V| \to \infty$ competitive ratio of $1/e$ for the case $|U| > 1$.
+\end{theorem}
+
+\end{document}

@@ -1,0 +1,71 @@
+\input{scribe.tex}
+
+\begin{document}
+%FILL IN THE RIGHT INFO.
+%\lecture{**LECTURE-NUMBER**}{**DATE**}{**LECTURER**}{**SCRIBE**}
+\lecture{4}{Priority Algorithms}{Allan Borodin}{Kevin Gao}
+
+Recall the template for the fixed order priority algorithm template:
+
+\begin{codebox}
+    \li $\mathcal{J} =$ set of all possible inputs
+    \li $\preceq\,\, = $ a total ordering on $\mathcal{J}$ (typically induced by a function $f$)
+    \li $\mathcal{I} \subset \mathcal{J} = $ actual input to the algorithm
+    \li $S = \emptyset$ \RComment{items already examined by the algorithm}
+    \li $i = 0$
+    \li \While $\mathcal{I} - S \neq \emptyset$ \Do
+        \li $i = i + 1$
+        \li $\mathcal{I} = \mathcal{I} - S$
+        \li $I_i = \min_{\preceq} \{ I \in \mathcal{I} \}$ \RComment{select min element based on the ordering $\preceq$}
+        \li make an irrevocable decision $D_i$ concerning $I_i$ 
+        \li $S = S \cup \{I_i\}$
+    \End      
+\end{codebox}
+
+and the adaptive priority algorithm:
+
+\begin{codebox}
+    \li $\mathcal{J} =$ set of all possible inputs
+    \li $\mathcal{I} \subset \mathcal{J} = $ actual input to the algorithm
+    \li $S = \emptyset$ \RComment{items already examined by the algorithm}
+    \li $i = 0$
+    \li \While $\mathcal{I} - S \neq \emptyset$ \Do
+        \li $i = i + 1$
+        \li $\preceq_i\,\, = $ a total ordering on $\mathcal{J}$ (typically induced by a function $f_i$)
+        \li $\mathcal{I} = \mathcal{I} - S$
+        \li $I_i = \min_{\preceq_i} \{ I \in \mathcal{I} \}$ \RComment{select min element based on the ordering $\preceq_i$}
+        \li make an irrevocable decision $D_i$ concerning $I_i$ 
+        \li $S = S \cup \{I_i\}$
+        \li $\mathcal{J} = \mathcal{J} - \{I \in \mathcal{I} \mid I \preceq_i I_i \}$
+    \End      
+\end{codebox}
+
+\section{Inapproximations for Deterministic Priority Algorithms}
+
+Once we have a precise model, we can then argue that certain approximation bounds are impossible within this model. We first consider the weighted interval selection problem.
+
+For the interval selection problem, we have a set of intervals and each interval has a weight $w_j$. No priority algorithm can achieve a constant approximation. In an undergraduate course, we have shown that the unweighted interval selection problem can be optimally solved using a greedy algorithm by ordering the inputs by the earliest finishing time. We will prove a weaker result.
+
+\begin{theorem}
+    There is no priority approximation algorithm can achieve an approximation ratio better than 3.
+\end{theorem}
+\begin{proof}
+    We use a charging argument. 
+\end{proof}
+
+\section{Set Cover}
+
+In the set cover problem, we are given a collection $\mathcal{S} = \{S_1,\ldots,S_n\}$ of sets with $S_i \subseteq U$ for some universe $U$. In the weighted set cover problem, each set $S_i$ has a cost or weight $c(S_i)$. The objective is to find a minimum cost subcollection $\mathcal{S}'$ such that $\bigcup_{S \in \mathcal{S}} S = U$.
+
+For the set cover problem, the ``natural adaptive greedy algorithm'' is essentially the best priority algorithm.
+
+\begin{codebox}
+    \Procname{$\proc{Greedy-Set-Cover}(\mathcal{S})$}
+    \li $\mathcal{S}' = \emptyset$
+    \li \While $U$ is uncovered \Do
+        \li $j = \arg\min_{i} \{w(S_i) / |S_i \cap U|\}$
+        \li $\mathcal{S}' = \mathcal{S}' \cup \{S_j\}$
+        \li $U = U \setminus \{S_j\}$ 
+\end{codebox}
+
+\end{document}

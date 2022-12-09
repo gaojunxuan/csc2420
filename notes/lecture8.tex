@@ -1,0 +1,225 @@
+\input{scribe.tex}
+
+\begin{document}
+%FILL IN THE RIGHT INFO.
+%\lecture{**LECTURE-NUMBER**}{**DATE**}{**LECTURER**}{**SCRIBE**}
+\lecture{8}{Randomized Algorithm}{Allan Borodin}{Kevin Gao}
+
+\section{The Why of Randomized Algorithms}
+
+There are some problem settings (e.g. simulation, cryptography, interactive proofs, sublinear algorithms) where randomization is necessary. We can also use randomization to improve approximation ratios.
+
+In complexity theory, a fundamental question is how much can randomization lower the time complexity of a problem. For decision problems, there are three polynomial time randomized classes ZPP (zero-sided), RP (one-sided), and BPP (two-sided) error. The big question in \textbf{fine-grained complexity theory} is $\mathrm{BPP} \overset{?}{=} \mathrm{P}$.
+
+One important aspect of randomized algorithms in an offline setting is that the probability of success can be amplified by repeated independent trials of the algorithm. We will present some problems with randomized polynomial time algorithms but with no known deterministic polynomial algorithms.
+
+Randomization also plays a central role in online algorithms as the online settings is particularly vulnerable to worset case adversarial inputs.
+
+\section{Polynomial Identity Testing}
+
+We are implicitly given two multivariate polynomials and wish to determine if they are identical. One way we could be implicitly given these polynomial is by an arithmetic circuit. A specific case is the following symbolic determinant problem.
+
+\begin{problem}[Symbolic Determinant Problem]
+    \hfill
+
+    \normalfont \textbf{Input}: $n \times n$ matrix $A = (a_{i,j})$ whose entries are polynomials of total degree $d$ in $m$ variables, say with integer coefficients. \\
+    \normalfont \textbf{Output}: Whether or not $\det (A) = 0$ where
+    $$
+    \det (A) = \sum_{\pi \in S_n} {\mathrm{sgn}(\pi)} \prod_{i=1}^n a_{i,\pi(i)}.
+    $$
+\end{problem}
+
+\begin{lemma}[Schartz-Zipple Lemma]
+    Let $P \in \mathbb{F}[x_1,\ldots,x_m]$ be a non-zero polynomial over a field $\mathbb{F}$ of total degree at most $d$. Let $S$ be a finite subset of $\mathbb{F}$. Then,
+    $$
+    \Pr_{r_i \in S} [P(r_1,\ldots,r_m) = 0] \leq \frac{d}{|S|} 
+    $$
+\end{lemma}
+The Schartz-Zipple lemma is a multivariate generalization that a univariate polynomial of degree $d$ can have at most $d$ zeros.
+
+For the randomized algorithm for symbolic determinant, pick a large set $S$ of integers such that $|S| \geq 2nd$. Randomly choose $r_i \in S$. Evaluate $x_i = r_i$. Then, we have a matrix of integers.
+
+The determinant can then be calculated in $O(n^3)$ arithmetic operations. We are computing a degree $nd$ polynomial $\det(A)$ at random $r_i \in S$. Since $|S| \geq 2nd$, then
+$$
+\Pr[\det(A') = 0] = \frac{1}{2}.
+$$
+The probability of correctness con be amplifed by choosing a bigger $S$ or by repeated trials.
+
+\section{Exact Max-k-SAT}
+
+Recall that in \textbf{exact} max-$k$-SAT, we are given a CNF formula in which every clause has exactly $k$ literals. We consider the weighted case in which clauses have weights. The goal is to find a satisfying assignment that maximizes the size (or weight) of clauses that are satisfied. In the general \textbf{max-SAT} problem, there is no restriction on the number of literals in each clause.
+
+The naive randomized online algorithm for max-$k$-SAT is to randomly set each variable to TRUE or FALSE with equal probability.
+
+\begin{proof}
+    Each clause $C_i$ has $k$ variables. The probability that a random assignment of the literals in $C_i$ will set the clause to be satisfied is exactly $\frac{2^{k} - 1}{2^k}$. Hence,
+    $$
+    \Exp[w(\text{satisfied clauses})] = \frac{2^k - 1}{2^k} \sum_{i} w_i
+    $$
+\end{proof}
+
+\subsection{Derandomizing the Naive Randomized Algorithm}
+
+This can be derandomized into a deterministic algorithm using the method of \textbf{conditional expectations}. For notation simplicity, let T = 1 and F = 0. Let $w(F)|\tau$ denote the weighted sum of satisfied clauses given truth assignment $\tau$.
+
+Let $x_j$ be any variable. We express
+$$
+\Exp[w(F)|_{x_i \in \{0,1\}}] = \frac{1}{2} \Exp[w(F)|_{x_i \in \{0,1\}}|x_j = 1] + \frac{1}{2} \Exp[w(F) |_{x_i \in \{0,1\}} | x_j = 0]
+$$
+This implies that one of the choices of $x_j$ will yield an expectation at least as large as the overall expectation. Hence, to derandomize this algorithm, we can set each variable $x_j$ to the value that maximizes the overall expectation. We can continue to do this for each variable and obtain a deterministic solution whose weight is at least the overall expected value of the naive randomized algorithm.
+
+More formally, if $\Exp[w(F) | x_i = 1] \geq \Exp[w(F) | x_i = 0 ]$, we set $x_i$ to True and False otherwise. Then, the deterministic choice of the truth assignment to $x_i$ guarantees an expected value no less than the expected value of the randomized algorithm because
+$$
+\max\{\Exp[w(F) | x_i = 1], \, \Exp[w(F) | x_i = 0]\} \geq \Exp[w(F)].
+$$
+
+For $k \geq 3$, Hasatad proved using PCP that it is NP-hard to improve upon the $\frac{2^k - 1}{2^k}$ approximation ratio for max-$k$-SAT. For max-2-SAT, the $\frac{3}{4}$ ratio can be improved by the use of semi-definite programming and randomized rounding. However, the naive randomized algorithm only achieves an approximation ratio of $1/2$ for the general max-SAT problem.
+
+\section{Max-SAT}
+
+The analysis for exact max-$k$-SAT needs the fact that all clauses have $k$ literals. Next, we consider \textbf{Johnson's algorithm} for the general max-SAT problem where there could be unit clauses.
+
+\begin{codebox}
+    \Procname{$\proc{Johnson's Algorithm}$}
+    \li for all clauses $C_i$, $w_i' = w_i / 2^{|C_i|}$
+    \li $L = $ set of clauses in formula $F$
+    \li $X = $ set of variables
+    \li \For $x \in X$ or until $L \isequal \emptyset$ \Do
+        \li $P = \{C_i \in L \mid \text{$x$ occurs positively}\}$
+        \li $N = \{C_j \in L \mid \text{$x$ occurs negatively}\}$
+        \li \If $\sum_{C_i \in P} w_i' \geq \sum_{C_j \in N} w_j'$ \Then
+            \li $x = $ T
+            \li $L = L \setminus P$
+            \li \For $C_r \in N$ \Do
+                \li $w_r' = 2w_r'$
+            \End
+        \li \Else
+            \li $x = $ F
+            \li $L = L \setminus N$
+            \li \For $C_r \in P$ \Do
+                \li $w_r' = 2w_r'$
+            \End
+        \End
+    \li delete $x$ from $X$
+    \End   
+\end{codebox}
+
+Yannakakis observed that for arbitrary max-SAT, the approximation ratio (not totality ratio) of Johnson's algorithms is at best $\frac{2}{3}$. Consider the 2-CNF: $F = (x \lor \neg y) \land (\neg x \lor y) \land \neg y$ when variable $x$ is first set to true; otherwise, consider $F = (x \lor \neg y) \land (\neg x \lor y) \land y$.
+
+Suppose that we assign each variable $x_j$ with a probability value $p_j$.
+\begin{codebox}
+    \Procname{$\proc{Randomized-Max-SAT}$}
+    \li $L = $ set of clauses in formula $F$
+    \li $X = $ set of variables
+    \li let $u_i = \Pr[\text{$C_i$ is not satisfied}] = \left( \prod_{\neg x_j \in C_i} p_j \right) \cdot \left( \prod_{x_j \in C_i} (1-p_j) \right) $
+    \li \For $x_j \in X$ or until $L \isequal \emptyset$ \Do
+        \li $P = \{C \in L \mid \text{$x_j$ occurs positively}\}$
+        \li $N = \{C \in L \mid \text{$x_j$ occurs negatively}\}$
+        \li \If $p_j \cdot \sum_{C_i \in P} w(C) u_i \geq (1-p_j) \sum_{C_i \in N} w(i) u_i$ \Then
+            \li $x_j = $ T
+            \li $L = L \setminus P$
+            \li \For $C_r \in N$ \Do
+                \li $u_r = u_r / p_j$
+            \End
+            \li $\vdots$ 
+        \End
+        \li delete $x$ from $X$
+    \End
+\end{codebox}
+
+Observe that Johnson's algorithm is the derandomization of this randomized algorithm with $p_i = 1/2$ for all variables $x_i$ (Yannakakis, 1994).
+
+In proving the $\frac{2}{3}$ approximation ratio for Johnson's max-SAT algorithm, Chen et al. asked whether or not the approximation ratio could be improved by using a random ordering of the propositional variables. Costello, Shapira and Tetali in 2011 showed that in the ROM model, Johnson's algorithm achieves approximation $(2/3 + \epsilon)$ for $\epsilon \approx 0.003653$. Poloczek and Schnitger showed that the approximation ratio for Johnson's algorithm in ROM is at most $2\sqrt{15} - 7 \approx 0.746 < 3/2$, noting that $3/4$ is the ratio first obtained by Yannakakis's IP/LP approximation that we will soon present.
+
+\subsection{Max-SAT in Random Order Model}
+
+To precisely model the max-SAT problem within an online or priority framework, we need to specify the input model. We consider the following models in increasing order of information provided:
+
+\begin{itemize}
+    \item[M0.] Each propositional variable $x$ is represented by the names of the positive and negative clauses in which it appears.
+    \item[M1.] Each propositional variable $x$ is represented by the length of each clause $C_i$ in which $x$ appears positively, and for each clause $C_j$ in which it appears negatively.
+    \item[M2.] In addition to M1, we provide for each $C_i$ and $C_j$, a list of the other variables in that clause.
+    \item[M3.] The variable $x$ is represented by a complete specification of each clause in which it appears.
+\end{itemize}
+
+Poloczek and Schnitger first considered a ``canonical randomization'' of Johnson's algorithm. The canonical randomization algorithm sets a variable $x_i$ to True with probability $\frac{w_i'(P)}{w_i'(P) + w_i'(N)}$ where $w_i'(P)$ and $w_i'(N)$ is the current combined weight of clauses in which $x_i$ occurs positively and negatively, respectively. Their substantial idea is to adjust the random setting so as to \textbf{better account for the weight of unit clauses} in which only one variable occurs. 
+
+\subsection{Randomized Rounding for Max-SAT}
+
+We will reformulate the weighted max-SAT as a 0/1 IP: suppose that there are $n$ variables and $m$ clauses.
+
+$$
+\begin{array}{lllll}
+    \max & \sum_{j} w_j z_j \\
+    \text{s.t.} & \sum_{x_i \in C_j} y_i + \sum_{\neg x_i \in C_j} (1-y_i) \geq z_j & \forall j \in \{1,\ldots,m\} \\
+    & y_i \in \{0,1\} & \forall i \in \{1,\ldots,n\} \\
+    & z_j \in \{0,1\} & \forall j \in \{1,\ldots,m\}
+\end{array}
+$$
+
+For this integer program, $y_i = 1$ iff variable $x_i$ is T in the corresponding max-SAT problem. $z_j = 1$ iff clause $C_j$ is satisfied in the corresponding max-SAT problem. Since IP is NP-hard, we need to relax the constraints on $y$ and $z$. In particular, we relax the constriants to $y_i \geq 0$ and $z_j \in [0,1]$ (note that it is equivalent to say $y_i \in [0,1]$).
+
+Let $y^*$ and $z^*$ be an optimal solution of the relaxed LP. We obtain a random IP solution by setting each $\tilde{y_i} = 1$ independently with probability $y^*$ and $\tilde{y_i} = 0$ with probability $1 - y^*$.
+
+\begin{theorem}
+    Let $C_j$ be a clause with $k$ literals. Then,
+    $$
+    \Pr[\text{\normalfont $C_j$ is satisfied}] = \left[ 1 - \left( 1-\frac{1}{k} \right)^k \right] \cdot z_j^*
+    $$
+\end{theorem}
+
+\begin{proof}
+    Recall the arithmetic-geometric mean inequality (AM-GM ineq.).
+    $$
+    \left( \prod_{i=1}^k a_i \right)^k \leq \frac{1}{k} \sum_{i=1}^k a_i.
+    $$
+    Pick an arbitrary clause $C_j$. Then,
+    $$
+    \Pr[\text{$C_j$ not satisfied}] = \prod_{x_i \in C_j} (1 - y_i^*) \prod_{\neg x_i \in C_j} y_i^* \leq \left[ \frac{1}{k} \left( \sum_{x_i \in C_j} (1-y_i^*) + \sum_{\neg x_i \in C_j} y_i^* \right) \right]^{k}.
+    $$
+    Note that by rearranging the terms,
+    $$
+    \left[ \frac{1}{k} \left( \sum_{x_i \in C_j} (1-y_i^*) + \sum_{\neg x_i \in C_j} y_i^* \right) \right]^k =  \left[ 1 - \frac{1}{k} \left( \sum_{x_i \in C_j} y_i^* + \sum_{\neg x_i \in C_j} (1-y_i^*) \right) \right]^k
+    $$
+    so by the LP constraint that $\sum_{x_i \in C_j} y_i + \sum_{\neg x_i \in C_j} (1-y_i) \geq z_j$, we have
+    $$
+    \Pr[\text{$C_j$ not satisfied}] \leq \left( 1 - \frac{z_j^*}{k} \right)^k 
+    $$
+    By concavity of $1-(1 - \frac{z_j^*}{k})^k$,
+    $$
+    \Pr[\text{$C_j$ satisfied}] \geq 1 - \left( 1 - \frac{z_j^*}{k} \right)^k \geq \left[ 1 - \left( 1-\frac{1}{k} \right)^k \right] \cdot z_j^*.
+    $$
+\end{proof}
+
+It follows immediately from this theorem that for sufficiently large $k$, the probability that $C_j$ is satisfied is lower bounded by $1 - 1/e$. Therefore, the expected solution of the rounded LP is at least $1 - 1/e$ the OPT of the original IP.
+
+\section{Weighted Max-Cut and Max-Di-Cut}
+
+Given a graph $G = (V,E)$, the max-cut objective is to partition the vertices into subsets $S$ and $T$ so as to maximize $|\{(u,v) \in E \mid u \in S,\, v \in T\}$.
+
+In the weighted max-cut problem, there is a weight function $w:\; E \to \mathbb{R}^+$ and the objective is to maximize 
+$$
+\sum_{\substack{(u,v) \in E \\ u \in S \\ v \in T}} w(u,v).
+$$
+In the max-di-cut problem, we are givena directed graph instead of an undirected graph.
+
+Consider max-cut. We randomly and inependently set each $u$ to be in $S$ with probability $\frac{1}{2}$. For any edge $(u,v)$, it is easy to see that the probability that the random assignment assigns different values to $u$ and $v$ is exactly $\frac{1}{2}$. Hence, the expected approximation ratio is $\frac{1}{2}$ and this is a totality ratio.
+
+\section{Approximation for USM}
+
+\begin{codebox}
+    \li $X_0 = \emptyset$ 
+    \li $Y_0 = U$
+    \li \For $i = 1$ \To $n$ \Do
+        \li $a_i = f(X_{i-1} \cup \{u_i\}) - f(X_{i-1})$
+        \li $b_i = f(Y_{i-1} \setminus \{u_i\}) - f(Y_{i-1})$
+        \li \If $a_i \geq b_i$ \Then
+            \li $X_i = X_{i-1} \cup \{u_i\}$
+            \li $Y_i = Y_{i-1} \setminus \{u_i\}$
+        \End
+    \End
+\end{codebox}
+
+Buchbinder et al. showed that the natural randomization of this deterministic algorithm achieves approximation ratio $1/2$. The randomized algorithm chooses to either add $\{u_i\}$ to $X_{i-1}$ with probability $\frac{a_i'}{a_i'+b_i'}$ or to delete $\{u_i\}$ from $Y_{i-1}$ with probability $\frac{b_i'}{a_i' + b_i'}$ where $a_i' = \max\{a_i,0\}$ and $b_i' = \max\{b_i,0\}$. If $a_i = b_i = 0$, then add $\{u_i\}$ to $X_{i-1}$.
+
+\end{document}

@@ -1,0 +1,120 @@
+\input{scribe.tex}
+
+\begin{document}
+%FILL IN THE RIGHT INFO.
+%\lecture{**LECTURE-NUMBER**}{**DATE**}{**LECTURER**}{**SCRIBE**}
+\lecture{10}{Sublinear Algorithms}{Allan Borodin}{Kevin Gao}
+
+\section{Heavy Hitter with Hashing}
+
+\section{Frequency Moment}
+
+Let $m_i$ denote the number of occurrences of the value $i$ in the stream $A$. For $k \geq 0$, the $k$th frequency moment is $F_k = \sum_{i \in [n]}(m_i)^k$. The frequency moments are most often studied for integral $k$. Given an error bound $\epsilon$ and confidence bound $\delta$, the objective of the frequency moment problem is to compute an estimate $F_k'$ such that
+$$
+\Pr[|F_k - F_k'| > \epsilon F_k] \leq \delta.
+$$
+
+\begin{codebox}
+    \Procname{$\proc{AMS}(A, k)$}
+    \li $s_1 = \left( \frac{8}{\epsilon^2} m^{1-1/k} \right) / \delta^2$
+    \li $s_2 = 2 \log (1/\delta)$. 
+    \li \For $i = 1$ \To $s_2$ \Do
+        \li $j = 1$ 
+        \li \textbf{repeat} $s_1$ times \Do
+            \li randomly chooce $p \in [1,\ldots,m]$
+            \li $r = |\{q \mid q \geq p,\, a_p = a_q \}|$
+            \li $X_{ij} = m(r^k - (r-1)^k)$
+            \li $j = j + 1$ 
+        \End
+        \li $Y_i = $ mean of $\{X_{i,1},X_{i,2},\ldots,X_{i,s_1}\}$
+    \End
+    \li $Y = $ median of $\{Y_1,\ldots,Y_{s_2}\}$
+    \li \Return $Y$ 
+\end{codebox}
+
+For simplicity, we assume that input stream length $m$ is known but in reality, we can estimate and update it as the stream goes. For the analysis, we need to show that $\Exp[X] = F_k$ and that the variance $\Var[X]$ is small enough such that by the Chebyshev inequality, $\Pr[|Y_i - F_k| > \epsilon F_k]$ is also small.
+
+\section{Semi-streaming}
+
+Feigenbaum et al. introduced \textbf{semi-streaming} in order to consider sparse graph problem in the streaming model. Semi-streaming is an online model where we are not required to make immediate irrevocable decisions but can only maintain limited amount of information about the input stream. The goal is to maintain $\widetilde{O}(n)$ space.
+
+For semi-streaming in the context of graph theory problems, we have a graph $G = (V,E)$ with $n = |V|$, $m = |E|$, and vertices or edges arrive online in sequence.
+
+An online algorithm does not have to limit itself to $\widetilde{O}(n)$ memory. It could remember all edges seen so far and the order in which they have arrived, and a regular online algorithm can use any amount of space to make decisions.
+
+\subsection{Bipartite Matching in Semi-streaming Model}
+
+In the edge arrival model, there is no randomized semi-streaming algorithm with worst-case competitive ratio better than $1/2$. The ratio is optimal since any greedy algorithm achieves $1/2$ in streaming as well as in the online model.
+
+In the vertex arrival model, the randomized KVV ranking algorithm also easily carries over to the semi-streaming model (either deterministic random order or randomized adversarial order). Surprisingly, Goel et al showed that there is a deterministic semi-streaming algorithm with adversarial order input sequences.
+
+\section{Weighted Majority Algorithm}
+
+The \textbf{weighted majority algorithm} and generalizations: We consider the problem of \textbf{finding the best expert}. Suppose we have say $k$ ``expert'' (e.g. weatherman) and at every time $t$, they give a binary prediction (e.g. rain v.s. no rain). The predictions from different ``experts'' can be highly correlated. Without any knowledge of the subject matter, we want to construct an algorithm that tries to make predictions that will be nearly as good over time $t$ as the best ``expert''.
+
+\begin{codebox}
+    \Procname{$\proc{WM}(\id{experts} = [a_1,\ldots])$}
+    \li $w_i(0) = 1$ for all $i$
+    \li \For $t = 0$ \To $\ldots$ \Do
+        \li \If $\sum_{\text{$i$ predicts 0 at $t+1$}} w_i(t) \geq \frac{1}{2} \sum_{i} w_i(t)$ \Then
+            \li predict $0$ for time $(t+1)$
+        \li \ElseIf $\sum_{\text{$i$ predicts 1 at $t+1$}} w_i(t) \geq \frac{1}{2} \sum_{i} w_i(t)$ \Then
+            \li predict $1$ for time $(t+1)$
+        \End
+        \li \For $i = 1$ \To $k$ \Do
+            \li \If $i$ made a mistake on $(t+1)$st prediction \Then
+                \li $w_i(t+1) = (1-\epsilon)w_i(t)$
+            \li \Else
+                \li $w_i(t+1) = w_i(t)$
+            \End
+        \End
+    \End
+\end{codebox}
+
+\begin{theorem}[Weight majority algorithm]
+    Let $m_i(t)$ be the number of mistakes of expert $i$ after the first $t$ expert predictions, and let $M(t)$ be the number of our mistakes. Then for any expert $i$ (including the best expert),
+    $$
+    M(t) \leq \frac{2 \ln k}{\epsilon} + 2(1+\epsilon)m_i(t)
+    $$
+\end{theorem}
+
+\begin{proof}
+    TBD
+\end{proof}
+
+We can randomize the algorithm and remove the factor of 2. Instead of taking the weighted majority opinion, in each iteration $t$, choose the prediction of the $i$th expert with probability $w_i(t) / \sum_{i} w_i(t)$. This is a so-called natural randomization, as we have seen in monotone sublinar optimization.
+
+\begin{theorem}[Randomized weighted majority algorithm]
+    For any expert,
+    $$
+    \Exp[M(t)] \leq \frac{\ln k}{\epsilon} + (1 + \epsilon) m_i(t).
+    $$
+\end{theorem}
+
+\section{Multiplicative Weights Algorithm}
+
+The weighted majority algorithm can be generalized to the multiplicative weights algorithm. If the $i$th expert or decision is chosen on time $t$, it incurs a real valued cost/profit $m_i(t) \in [-1,1]$. The algorithm then updates the weights
+$$
+w_i(t+1) = (1 - \epsilon m_i(t)) w_i(t)
+$$
+Let $\epsilon \leq 1/2$ and $\Phi(t) = \sum_{t} w_i(t)$. On time $t$, we randomly select expert $i$ with probability $w_i(t) / \Phi(t)$.
+
+\begin{theorem}
+    The expected cost of the multiplicative weight algorithm after $T$ rounds is
+    $$
+    \sum_{t = 1}^T \mathbf{m}(t) \cdot \mathbf{p}(t) \leq \frac{\ln k}{\epsilon} + \sum_{t=1}^T m_i(t) + \epsilon \sum_{t=1}^T |m_i(t)|
+    $$
+    for any expert $i$.
+\end{theorem}
+
+\section{Primality Testing}
+
+Let
+$$
+\mathrm{PRIMES} = \{N \mid \text{$N$ is prime}\}
+$$
+where $N$ is represented in binary so that $n = O(\log n)$.
+
+It's easy to show that PRIMES is in co-NP and Vaughan showed that PRIMES is in NP. In 2022, Agarwal, Kayal, and Saxena (\textbf{AKS}) showed that primality is in deterministic polynomial time.
+
+\end{document}
