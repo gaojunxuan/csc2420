@@ -225,10 +225,44 @@
 
     \item Consider Sch\"oning's random walk algorithm for 3SAT.
     \begin{enumerate}
-        \item Consider a single trial. Note that the choice of unsatisfied clause in the algorithm is arbitrary. What would be a simple way to choose such a clause? Suggest some reasonable heuristics (to the choice of the unsatisfied clause and/or the varaiable(s) to flip) in the algorithm that might improve the probability of success ``in practice" in a single trial. Briefly explain you reasoning for your proposed heuristics.        
+        \item Consider a single trial. Note that the choice of unsatisfied clause in the algorithm is arbitrary. What would be a simple way to choose such a clause? Suggest some reasonable heuristics (to the choice of the unsatisfied clause and/or the varaiable(s) to flip) in the algorithm that might improve the probability of success ``in practice" in a single trial. Briefly explain you reasoning for your proposed heuristics.  
+        
+        \textit{Solution}. Instead of randomly picking variables in each unsatisfied clause with uniform probability, we pick the variable with probability inverse proportional to the number of other clauses satisfied due to this variable. The intuitive reasoning for this heuristic is that if the current assignment satisfies some other clauses, choosing and flipping it could potentially unsatisfy some other clauses. Weighing the probability to be inversely proportional to this number makes it so that flipping the currently chosen variable does not affect too many other clauses that are already satisfied.
+
+        This is not too hard to implement in practice. Take the original Sch\"oning's algorithm. At each iteration, once we find an unsatisfied clause, instead of randomly choosing a variable to flip, we first compute $n_i$ for each variable $x_i$ in that clause such that $n_i$ is the number of satisfied clauses in which $x_i$ or $\neg x_i$ is the only satisfied literal. Then, we randomly pick a variable $x_j$ from the clause currently being considered with probability $1 / n_j$, breaking ties arbitrarily.
+
         \item What approximately would the probability of success be for a single trial if we did the random walk for $6n$ steps?
         
-        \textit{Solution}. 
+        \textit{Solution}. As with the analysis done in class, let $x^*$ be the satisfying assignment. We can model the problem using a Markov chain with states $0,1,\ldots, n$. State $i$ represents a truth assignment $n-i$ Hamming distance away from the satisfying assignment $x^*$.
+        
+        \begin{figure}[h]
+            \centering
+            \includegraphics[width=0.5\linewidth]{markov-chain.pdf}
+        \end{figure}
+
+        Since Sch\"oning's algorithm uses a randomly assignment as the initial assignment, there is a $\binom{n}{u} / 2^n$ probability that the initial solution will be $u$ Hamming distance away from the satisfying assignment. So now suppose we are at a state $u$ steps away from the final state. We would like to find a lower bound on the probability of reaching state $n$ in at most $6n$ moves. Since $u \leq n$, this probability is lower bounded by the probability of reaching state $n$ in at most $6u$ steps. This is in turn lower bounded by the probability of moving $2.5u$ steps in the wrong direction and $2.5u + u$ in the right direction. This is a lower bound on the overall probability of succeeding because it is just one of many ways to reach $n$ within $6u$ steps.
+
+        This gives us a lower bound of
+        $$
+        \sum_{u=0}^n \left[ \binom{n}{u} \cdot \frac{1}{2^n} \cdot \binom{6u}{2.5u} \cdot \left( \frac{1}{3} \right)^{3.5u} \cdot \left( \frac{2}{3} \right)^{2.5u} \right].
+        $$
+        We can bound the binomial coefficient using Stirling's approximation:
+        $$
+        \begin{aligned}
+            \binom{6u}{2.5u} &= \frac{(6u)!}{(2.5u)! (3.5u)!} \\
+            &\approx \frac{\sqrt{2\pi(6u)}}{\sqrt{2\pi(2.5u)} \sqrt{2\pi(3.5u)}} \cdot \left( \frac{6u}{e} \right)^{6u} \left( \frac{e}{2.5u} \right)^{2.5u} \left( \frac{e}{3.5u} \right)^{3.5u} \\
+            &= \sqrt{\frac{12}{35\pi u}} \left( \frac{6^6}{2.5^{2.5} \cdot 3.5^{3.5}} \right)^u
+        \end{aligned}
+        $$
+        so
+        $$
+        \binom{6u}{2.5u} \cdot \left( \frac{1}{3} \right)^{3.5u} \cdot \left( \frac{2}{3} \right)^{2.5u} \approx \sqrt{\frac{12}{35\pi u}} \cdot 0.4567^u
+        $$
+        Hence, using the combinatorial identity, we give a bound on the overall probability of succeeding:
+        $$
+        \sum_{u=0}^n \binom{n}{u} \frac{1}{2^n} \cdot \sqrt{\frac{12}{35\pi u}} \cdot 0.4567^u \geq \sqrt{\frac{12}{35\pi n}} \left(\frac{1+0.4567}{2}\right)^n \approx \sqrt{\frac{12}{35\pi u}} \cdot 0.72837^u
+        $$
+        which is slightly lower than the probability lower bound with $3n$ trials.
     \end{enumerate}
 \end{enumerate}
 
